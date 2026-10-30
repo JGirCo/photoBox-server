@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mandar foto</title>
+    <style>
+      body {
+        font-family: monospace;
+        background: #ff9a3c;
+        padding: 20px;
+        max-width: 400px;
+        margin: auto;
+        text-align: center;
+        color: #000;
+      }
+      h2 {
+        font-size: 24px;
+        margin-bottom: 24px;
+        font-weight: bold;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      input[type="file"] {
+        display: none;
+      }
+      select,
+      label,
+      button {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        border: 3px solid #000;
+        border-radius: 10px;
+        box-shadow: 4px 4px 0 #000;
+        font-weight: bold;
+        font-size: 16px;
+        font-family: monospace;
+        box-sizing: border-box;
+      }
+      select {
+        background: #fff;
+        color: #000;
+        cursor: pointer;
+        appearance: none;
+        text-align: center;
+      }
+      label {
+        background: #ffca28;
+        color: #000;
+        cursor: pointer;
+      }
+      button {
+        background: #ff7a00;
+        color: #000;
+        cursor: pointer;
+        text-transform: uppercase;
+      }
+      button:active,
+      label:active,
+      select:active {
+        box-shadow: 0 0 0 #000;
+        transform: translate(4px, 4px);
+      }
+      #statusMessage {
+        margin-top: 15px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Helloooo! :3</h2>
+
+    <form id="uploadForm">
+      <select name="box_id" required>
+        <option value="" disabled selected>¿A qué caja va?</option>
+        <option value="MARCOS">Marcos</option>
+        <option value="JUANMA">Juanma</option>
+      </select>
+
+      <label for="cameraInput">Elegir foto 📷️</label>
+      <input
+        type="file"
+        id="cameraInput"
+        name="file"
+        accept="image/*"
+        required
+      />
+
+      <button type="submit">Enviar</button>
+    </form>
+
+    <div id="statusMessage"></div>
+
+    <script>
+      const form = document.getElementById("uploadForm");
+      const statusDiv = document.getElementById("statusMessage");
+      const fileInput = document.getElementById("cameraInput");
+      const label = document.querySelector("label[for='cameraInput']");
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+          label.textContent = `Foto lista: ${fileInput.files[0].name}`;
+        }
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusDiv.textContent = "Enviando... ⏳";
+
+        const formData = new FormData(form);
+
+        try {
+          const response = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            statusDiv.textContent = `Error: ${err.detail || "Fallo al enviar"}`;
+            return;
+          }
+
+          const data = await response.json();
+          statusDiv.innerHTML = `<h2>${data.message}</h2>`;
+          form.reset();
+          label.textContent = "Elegir foto 📷️";
+        } catch (err) {
+          statusDiv.textContent = "Error de conexión con el servidor (•_•)";
+        }
+      });
+    </script>
+  </body>
+</html>
