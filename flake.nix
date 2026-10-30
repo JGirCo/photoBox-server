@@ -39,6 +39,7 @@
                 ruff
                 ty
                 pkg-config
+                mosquitto
               ]
               ++ nativeLibs;
 
