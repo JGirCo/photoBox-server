@@ -106,8 +106,11 @@ async def handle_upload(
         await f.write(raw_bytes)
 
     if mqtt_client:
-        payload = json.dumps({"image_id": box_id, "status": "updated"})
-        await mqtt_client.publish(box_id, payload=payload, qos=1)
+        payload = json.dumps({"image_id": box_id.value, "status": "updated"})
+        try:
+            await mqtt_client.publish(box_id.value, payload=payload, qos=1)
+        except aiomqtt.MqttError as e:
+            print(f"Warning: Could not publish MQTT alert ({e}).")
 
     return UploadResponse(
         message=f"Enviado a {box_id.value}! ヽ(•‿•)ノ",

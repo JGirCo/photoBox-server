@@ -120,8 +120,12 @@
           });
 
           if (!response.ok) {
-            const err = await response.json();
-            statusDiv.textContent = `Error: ${err.detail || "Fallo al enviar"}`;
+            const text = await response.text();
+            let detail = text;
+            try {
+              detail = JSON.parse(text).detail || text;
+            } catch {}
+            statusDiv.textContent = `Error ${response.status}: ${detail}`;
             return;
           }
 
