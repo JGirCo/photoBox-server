@@ -3,12 +3,26 @@ import base64
 import json
 import sys
 import urllib.request
+
 import aiomqtt
 import numpy as np
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-MQTT_BROKER = "localhost"
-MQTT_TOPIC = "photobox/alerts"
-IMAGE_RAW_URL = "http://localhost:8000/image.raw"
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    server_ip: str = "localhost"
+    mqtt_client_name: str = "photobox-listener"
+    mqtt_user: str = "photoBox"
+    mqtt_pass: str = "pass"
+
+    @property
+    def image_raw_url(self) -> str:
+        return f"http://{self.server_ip}:8000/{self.mqtt_client_name}.raw"
+
+
+settings = Settings()
 
 
 def print_kitty_rgb565(raw_bytes: bytes):
@@ -32,17 +46,31 @@ def print_kitty_rgb565(raw_bytes: bytes):
 
 async def main():
     print("Starting MQTT listener... 🎧")
-    async with aiomqtt.Client(MQTT_BROKER) as client:
-        await client.subscribe(MQTT_TOPIC)
-        print(f"Subscribed to topic: {MQTT_TOPIC} 📡")
+    async with aiomqtt.Client(
+        settings.server_ip,
+        identifier=settings.mqtt_client_name,
+        username=settings.mqtt_user,
+        password=settings.mqtt_pass,
+    ) as client:
+        await client.subscribe(settings.mqtt_client_name)
+        print(f"Subscribed to topic: {settings.mqtt_client_name} 📡")
 
         async for message in client.messages:
-            payload = json.loads(message.payload.decode())
-            image_id = payload.get("image_id")
-            print(f"MQTT Alert: New frame available (ID: {image_id}) 📥")
+            raw_text = message.payload.decode("utf-8")
 
             try:
-                with urllib.request.urlopen(IMAGE_RAW_URL) as resp:
+                payload = json.loads(raw_text)
+                image_id = payload.get("image_id", settings.mqtt_client_name)
+            except json.JSONDecodeError:
+                image_id = settings.mqtt_client_name
+
+            print(
+                f"MQTT Alert: New frame available for {message.topic} "
+                f"(ID: {image_id}) ( •̀ᴗ•́ )"
+            )
+
+            try:
+                with urllib.request.urlopen(settings.image_raw_url) as resp:
                     raw_bytes = resp.read()
 
                 with open("downloaded_box.bin", "wb") as f:

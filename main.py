@@ -1,4 +1,5 @@
 import io
+import json
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -105,7 +106,8 @@ async def handle_upload(
         await f.write(raw_bytes)
 
     if mqtt_client:
-        await mqtt_client.publish(box_id, payload=b"update", qos=1)
+        payload = json.dumps({"image_id": box_id, "status": "updated"})
+        await mqtt_client.publish(box_id, payload=payload, qos=1)
 
     return UploadResponse(
         message=f"Enviado a {box_id.value}! ヽ(•‿•)ノ",
